@@ -18,8 +18,9 @@ base_apk="${2}"
 package="${3}"
 split="${4}"
 title_id="${5}"
-fused="${6}"
 aapt="${7}"
+dex_zip="${8}"
+lazy_bundles="${9}"
 
 aapt_cmd="$aapt dump xmltree $base_apk --file AndroidManifest.xml"
 version_code=$(${aapt_cmd} | grep "http://schemas.android.com/apk/res/android:versionCode" | cut -d "=" -f2 | head -n 1 )
@@ -28,6 +29,14 @@ then
   echo "Base app missing versionCode in AndroidManifest.xml"
   exit 1
 fi
+
+unzip -l "${dex_zip}" classes.dex > /dev/null
+has_dexes=$?
+has_code="false"
+if [[ "${has_dexes}" -eq 0 && "${lazy_bundles}" == "false" ]]; then
+    has_code="true"
+fi;
+
 
 cat >$out_manifest <<EOF
 <?xml version="1.0" encoding="utf-8"?>
@@ -41,11 +50,11 @@ cat >$out_manifest <<EOF
   <dist:module
       dist:instant="false"
       dist:title="@string/$title_id"> <!-- title must be an ID! Needs to work with proguard/resource shrinking -->
-    <dist:fusing dist:include="$fused" />
     <dist:delivery>
       <dist:on-demand /></dist:delivery>
   </dist:module>
 
-  <application android:hasCode="false" /> <!-- currently only supports asset splits -->
+  <application android:hasCode="${has_code}" />
+ <uses-sdk android:minSdkVersion="$min_sdk" />
 </manifest>
 EOF

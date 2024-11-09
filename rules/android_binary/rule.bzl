@@ -11,50 +11,41 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Starlark Android Binary for Android Rules."""
 
+<<<<<<< Updated upstream
 load("//rules:acls.bzl", "acls")
+=======
+load(":attrs.bzl", "ATTRS")
+load(":impl.bzl", "impl")
+>>>>>>> Stashed changes
 load(
     "//rules:attrs.bzl",
     _attrs = "attrs",
 )
+<<<<<<< Updated upstream
 load("//rules:utils.bzl", "ANDROID_SDK_TOOLCHAIN_TYPE")
 load("//rules:visibility.bzl", "PROJECT_VISIBILITY")
 load(":attrs.bzl", "ATTRS")
 load(":impl.bzl", "impl")
 
 visibility(PROJECT_VISIBILITY)
+=======
+>>>>>>> Stashed changes
 
 _DEFAULT_ALLOWED_ATTRS = ["name", "visibility", "tags", "testonly", "transitive_configs", "$enable_manifest_merging", "features", "exec_properties"]
 
-_DEFAULT_PROVIDES = [ApkInfo, JavaInfo]
-
-def _outputs(name, proguard_generate_mapping, _package_name, _generate_proguard_outputs):
-    label = "//" + _package_name + ":" + name
-
-    outputs = dict(
-        deploy_jar = "%{name}_deploy.jar",
-        unsigned_apk = "%{name}_unsigned.apk",
-        signed_apk = "%{name}.apk",
-    )
-
-    # proguard_specs is too valuable an attribute to make it nonconfigurable, so if its value is
-    # configurable (i.e. of type 'select'), _generate_proguard_outputs will be set to True and the
-    # predeclared proguard outputs will be generated. If the proguard_specs attribute resolves to an
-    # empty list eventually, we do not use it in the dexing. If user explicitly tries to request it,
-    # it will fail.
-    if not acls.use_r8(label) and _generate_proguard_outputs:
-        outputs["proguard_jar"] = "%{name}_proguard.jar"
-        outputs["proguard_config"] = "%{name}_proguard.config"
-        if proguard_generate_mapping:
-            outputs["proguard_map"] = "%{name}_proguard.map"
-    return outputs
+_DEFAULT_PROVIDES = [AndroidApplicationResourceInfo, OutputGroupInfo]
 
 def make_rule(
         attrs = ATTRS,
         implementation = impl,
         provides = _DEFAULT_PROVIDES,
+<<<<<<< Updated upstream
         outputs = _outputs,
+=======
+>>>>>>> Stashed changes
         additional_toolchains = [],
         additional_providers = []):
     """Makes the rule.
@@ -63,7 +54,6 @@ def make_rule(
       attrs: A dict. The attributes for the rule.
       implementation: A function. The rule's implementation method.
       provides: A list. The providers that the rule must provide.
-      outputs: A function. The rule's outputs method for declaring predeclared outputs.
       additional_toolchains: A list. Additional toolchains passed to pass to rule(toolchains).
       additional_providers: A list. Additional providers passed to pass to rule(providers).
 
@@ -76,28 +66,37 @@ def make_rule(
         provides = provides + additional_providers,
         toolchains = [
             "//toolchains/android:toolchain_type",
-            ANDROID_SDK_TOOLCHAIN_TYPE,
+            "//toolchains/android_sdk:toolchain_type",
             "@bazel_tools//tools/jdk:toolchain_type",
         ] + additional_toolchains,
         _skylark_testable = True,
         fragments = [
             "android",
-            "bazel_android",  # NOTE: Only exists for Bazel
+            "bazel_android",
             "java",
             "cpp",
         ],
-        outputs = outputs,
-        cfg = config_common.config_feature_flag_transition("feature_flags"),
     )
 
-android_binary = make_rule()
+android_binary_internal = make_rule()
 
+<<<<<<< Updated upstream
 # TODO(zhaoqxu): Consider removing this method
+=======
+>>>>>>> Stashed changes
 def sanitize_attrs(attrs, allowed_attrs = ATTRS.keys()):
     """Sanitizes the attributes.
 
+    The android_binary_internal has a subset of the android_binary attributes, but is
+    called from the android_binary macro with the same full set of attributes. This removes
+    any unnecessary attributes.
+
     Args:
+<<<<<<< Updated upstream
       attrs: A dict. The attributes for the android_binary rule.
+=======
+      attrs: A dict. The attributes for the android_binary_internal rule.
+>>>>>>> Stashed changes
       allowed_attrs: The list of attribute keys to keep.
 
     Returns:
@@ -106,22 +105,24 @@ def sanitize_attrs(attrs, allowed_attrs = ATTRS.keys()):
     for attr_name in list(attrs.keys()):
         if attr_name not in allowed_attrs and attr_name not in _DEFAULT_ALLOWED_ATTRS:
             attrs.pop(attr_name, None)
-        elif attr_name == "shrink_resources":
+
+        # Some teams set this to a boolean/None which works for the native attribute but breaks
+        # the Starlark attribute.
+        if attr_name == "shrink_resources":
             if attrs[attr_name] == None:
                 attrs.pop(attr_name, None)
             else:
-                # Some teams set this to a boolean/None which works for the native attribute but breaks
-                # the Starlark attribute.
                 attrs[attr_name] = _attrs.tristate.normalize(attrs[attr_name])
 
     return attrs
 
-def android_binary_macro(**attrs):
-    """android_binary rule.
+def android_binary_internal_macro(**attrs):
+    """android_binary_internal rule.
 
     Args:
       **attrs: Rule attributes
     """
+<<<<<<< Updated upstream
 
     # Required for ACLs check in _outputs(), since the callback can't access the native module.
     attrs["$package_name"] = native.package_name()
@@ -143,3 +144,6 @@ def android_binary_macro(**attrs):
                             ],
         )
     )
+=======
+    android_binary_internal(**sanitize_attrs(attrs))
+>>>>>>> Stashed changes

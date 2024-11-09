@@ -11,11 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """Attributes."""
 
 load("//rules:android_neverlink_aspect.bzl", "android_neverlink_aspect")
-load("//rules:android_platforms_transition.bzl", "android_platforms_transition")
-load("//rules:android_split_transition.bzl", "android_split_transition", "android_transition")
 load(
     "//rules:attrs.bzl",
     _attrs = "attrs",
@@ -26,10 +25,13 @@ load(
     "split_config_aspect",
 )
 load("//rules:providers.bzl", "StarlarkApkInfo")
+<<<<<<< Updated upstream
 load("//rules:visibility.bzl", "PROJECT_VISIBILITY")
 load("@rules_java//java/common:java_info.bzl", "JavaInfo")
 
 visibility(PROJECT_VISIBILITY)
+=======
+>>>>>>> Stashed changes
 
 def make_deps(allow_rules, providers, aspects):
     return attr.label_list(
@@ -37,7 +39,7 @@ def make_deps(allow_rules, providers, aspects):
         allow_rules = allow_rules,
         providers = providers,
         aspects = aspects,
-        cfg = android_split_transition,
+        cfg = android_common.multi_cpu_configuration,
     )
 
 DEPS_ALLOW_RULES = [
@@ -78,7 +80,6 @@ ATTRS = _attrs.replace(
             native_target = attr.label(
                 allow_files = False,
                 allow_rules = ["android_binary", "android_test"],
-                cfg = android_platforms_transition,
             ),
             generate_art_profile = attr.bool(
                 default = True,
@@ -101,9 +102,34 @@ ATTRS = _attrs.replace(
                 android_library with `baseline_profiles` to avoid the runtime-focused code
                 optimizations that are enabled by `startup_profiles`.
                 """,
-                cfg = android_platforms_transition,
             ),
-            proguard_specs = attr.label_list(allow_empty = True, allow_files = True, cfg = android_platforms_transition),
+            proguard_specs = attr.label_list(allow_empty = True, allow_files = True),
+            # SNAP: Snap-specific mechanism for providing a startup profile that avoids
+            # the profile expansion and merging performed by upstream `startup_profiles`
+            startup_profile = attr.label(
+                mandatory = False,
+                allow_single_file = True,
+                default = None,
+                doc = "ART Startup profile to provide to R8 for PGO",
+            ),
+            baseline_profile = attr.label(
+                mandatory = False,
+                allow_single_file = True,
+                default = None,
+                doc = "ART Baseline profile to provide to R8 for PGO",
+            ),
+            compiler_dump = attr.string(
+                default = "off",
+                values = ["off", "on", "dump_only"],
+                doc = """
+                Whether to generate an R8 compiler dump or not.
+                The file will be outputted as `target_dump.zip`.
+                off: Don't generate compiler dump (default)
+                on: Generate APK + Compiler Dump
+                dump_only: Generate Compiler Dump Only (faster, but the build will eventually fail)
+                """,
+            ),
+            r8_jvm_args = attr.string_list(doc = "JVM Args to pass into R8."),
             resource_apks = attr.label_list(
                 allow_rules = ["apk_import"],
                 providers = [
@@ -112,7 +138,6 @@ ATTRS = _attrs.replace(
                 doc = (
                     "List of resource only apks to link against."
                 ),
-                cfg = android_platforms_transition,
             ),
             resource_configuration_filters = attr.string_list(),
             densities = attr.string_list(),
@@ -121,88 +146,27 @@ ATTRS = _attrs.replace(
                 default = _attrs.tristate.auto,
             ),
             dexopts = attr.string_list(),
-            main_dex_list = attr.label(allow_single_file = True, cfg = android_platforms_transition),
+            main_dex_list = attr.label(allow_single_file = True),
             main_dex_list_opts = attr.string_list(),
-            main_dex_proguard_specs = attr.label_list(allow_empty = True, allow_files = True, cfg = android_transition),
+            main_dex_proguard_specs = attr.label_list(allow_empty = True, allow_files = True),
             min_sdk_version = attr.int(),
             incremental_dexing = _attrs.tristate.create(
                 default = _attrs.tristate.auto,
             ),
             proguard_generate_mapping = attr.bool(default = False),
             proguard_optimization_passes = attr.int(),
-            proguard_apply_mapping = attr.label(allow_single_file = True, cfg = android_platforms_transition),
-            feature_flags = attr.label_keyed_string_dict(
-                allow_rules = ["config_feature_flag"],
-                providers = [config_common.FeatureFlagInfo],
-            ),
+            proguard_apply_mapping = attr.label(allow_single_file = True),
             multidex = attr.string(
                 default = "native",
                 values = ["native", "legacy", "manual_main_dex"],
-            ),
-            debug_key = attr.label(
-                cfg = "exec",
-                default = "//tools/android:debug_keystore",
-                allow_single_file = True,
-                doc = """
-                      File containing the debug keystore to be used to sign the debug apk. Usually
-                      you do not want to use a key other than the default key, so this attribute
-                      should be omitted.
-
-                      WARNING: Do not use your production keys, they should be strictly safeguarded
-                      and not kept in your source tree.
-                      """,
-            ),
-            debug_signing_keys = attr.label_list(
-                allow_files = True,
-                doc = """
-                      List of files, debug keystores to be used to sign the debug apk. Usually you
-                      do not want to use keys other than the default key, so this attribute should
-                      be omitted.
-
-                      WARNING: Do not use your production keys, they should be strictly safeguarded
-                      and not kept in your source tree.
-                      """,
-                cfg = android_platforms_transition,
-            ),
-            debug_signing_lineage_file = attr.label(
-                allow_single_file = True,
-                doc = """
-                      File containing the signing lineage for the debug_signing_keys. Usually you
-                      do not want to use keys other than the default key, so this attribute should
-                      be omitted.
-
-                      WARNING: Do not use your production keys, they should be strictly safeguarded
-                      and not kept in your source tree.
-                      """,
-                cfg = android_platforms_transition,
-            ),
-            key_rotation_min_sdk = attr.string(
-                doc = """
-                      Sets the minimum Android platform version (API Level) for which an APK's
-                      rotated signing key should be used to produce the APK's signature. The
-                      original signing key for the APK will be used for all previous platform
-                      versions.
-                      """,
-            ),
-            use_r_package = attr.bool(
-                default = False,
-                doc = """
-                      Whether resource fields should be generated with an RPackage class.
-                      Used ONLY for privacy sandbox.
-
-                      WARNING: Do not use outside of privacy sandbox build rules.
-                      """,
             ),
             _java_toolchain = attr.label(
                 default = Label("//tools/jdk:toolchain_android_only"),
             ),
             _defined_resource_files = attr.bool(default = False),
-            _package_name = attr.string(),  # for sending the package name to the outputs callback
-            # This is for only generating proguard outputs when proguard_specs is not empty or of type select.
-            _generate_proguard_outputs = attr.bool(),
             _enable_manifest_merging = attr.bool(default = True),
             _cc_toolchain_split = attr.label(
-                cfg = android_split_transition,
+                cfg = android_common.multi_cpu_configuration,
                 default = "@bazel_tools//tools/cpp:current_cc_toolchain",
                 aspects = [split_config_aspect],
             ),
@@ -217,7 +181,6 @@ ATTRS = _attrs.replace(
             _desugared_java8_legacy_apis = attr.label(
                 default = Label("//tools/android:desugared_java8_legacy_apis"),
                 allow_single_file = True,
-                cfg = android_platforms_transition,
             ),
             _bytecode_optimizer = attr.label(
                 default = configuration_field(
@@ -235,17 +198,12 @@ ATTRS = _attrs.replace(
                 cfg = "exec",
                 executable = True,
             ),
-            _manifest_merge_order = attr.label(
-                default = "//rules/flags:manifest_merge_order",
-            ),
-            _rewrite_resources_through_optimizer = attr.bool(
-                default = False,
-                doc = """
-                Allow for the optimizer to process resources. This is not supported in proguard.
-                """,
+            _enable_manifest_merging_dependency_priorities = attr.label(
+                doc = """When enabled respect the manifest priorities during manifest merging.""",
+                default = "//rules/flags:enable_manifest_merging_dependency_priorities",
             ),
         ),
-        _attrs.compilation_attributes(apply_android_transition = True),
+        _attrs.COMPILATION,
         _attrs.DATA_CONTEXT,
         _attrs.ANDROID_TOOLCHAIN_ATTRS,
         _attrs.AUTOMATIC_EXEC_GROUPS_ENABLED,
@@ -253,7 +211,5 @@ ATTRS = _attrs.replace(
     # TODO(b/167599192): don't override manifest attr to remove .xml file restriction.
     manifest = attr.label(
         allow_single_file = True,
-        # TODO(b/328051443): Apply the android_transition
-        cfg = android_platforms_transition,
     ),
 )

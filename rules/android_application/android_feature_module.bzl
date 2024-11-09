@@ -11,26 +11,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """android_feature_module rule.
 
 This file exists to inject the correct version of android_binary and android_library.
 """
 
-load("//rules:visibility.bzl", "PROJECT_VISIBILITY")
 load(
-    "//rules/android_binary:rule.bzl",
-    _android_binary_macro = "android_binary_macro",
+    ":android_feature_module_rule.bzl",
+    _android_feature_module_macro = "android_feature_module_macro",
+)
+load(
+    "//rules:android_binary.bzl",
+    _android_binary = "android_binary",
 )
 load(
     "//rules/android_library:rule.bzl",
     _android_library_macro = "android_library_macro",
 )
-load(
-    ":android_feature_module_rule.bzl",
-    _android_feature_module_macro = "android_feature_module_macro",
-)
-
-visibility(PROJECT_VISIBILITY)
 
 def android_feature_module(**attrs):
     """Macro to declare a Dynamic Feature Module.
@@ -54,7 +52,7 @@ def android_feature_module(**attrs):
     feature_flags | Optional dict, pass through feature_flags dict for native split binary.
     """
     _android_feature_module_macro(
-        _android_binary = _android_binary_macro,
+        _android_binary = _android_binary,
         _android_library = _android_library_macro,
         **attrs
     )

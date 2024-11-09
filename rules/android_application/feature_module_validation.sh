@@ -15,6 +15,7 @@
 
 out="${1}"
 manifest="${2}"
+<<<<<<< Updated upstream
 apk="${3}"
 is_coverage="${4}"
 is_java8="${5}"
@@ -22,39 +23,12 @@ lib_label="${6}"
 xmllint="${7}"
 unzip="${8}"
 is_asset_pack="${9}"
+=======
+>>>>>>> Stashed changes
 
 if [[ -n "$manifest" ]]; then
-  node_count=$("$xmllint" --xpath "count(//manifest/*)" "$manifest")
-  module_count=$("$xmllint" --xpath "count(//manifest/*[local-name()='module'])" "$manifest")
-  application_count=$("$xmllint" --xpath "count(//manifest/*[local-name()='application'])" "$manifest")
-  application_attr_count=$("$xmllint" --xpath "count(//manifest/application/@*)" "$manifest")
-  application_content_count=$("$xmllint" --xpath "count(//manifest/application/*)" "$manifest")
-  module_title=$("$xmllint" --xpath "string(//manifest/*[local-name()='module'][1]/@*[local-name()='title'])" "$manifest")
-  valid=0
-
-  # Valid manifest, containing a dist:module and an empty <application/>
-  if [[ "$node_count" == "2" &&
-  "$module_count" == "1" &&
-  "$application_count" == "1" &&
-  "$application_attr_count" == "0" &&
-  "$application_content_count" == "0" ]]; then
-    valid=1
-  fi
-
-  # Valid manifest, containing a dist:module
-  if [[ "$node_count" == "1" && "$module_count" == "1" ]]; then
-    valid=1
-  fi
-
-  if [[ "$valid" == "0" ]]; then
-    echo ""
-    echo "$manifest should only contain a single <dist:module /> element (and optional empty <application/>), nothing else"
-    echo "Manifest contents: "
-    cat "$manifest"
-    exit 1
-  fi
-
-  if [[ "$is_asset_pack" = false && "$module_title" != "\${MODULE_TITLE}" ]]; then
+  grep 'dist:title=\"\${MODULE_TITLE}\"' "$manifest"
+  if [[ "$?" != 0 ]]; then
     echo ""
     echo "$manifest dist:title should be \${MODULE_TITLE} placeholder"
     echo ""

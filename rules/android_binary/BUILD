@@ -12,11 +12,8 @@ filegroup(
 bzl_library(
     name = "bzl",
     srcs = glob(["*.bzl"]),
-    visibility = ["//:__subpackages__"],
     deps = [
-        "//rules:android_platforms_transition_bzl",
-        "//rules:android_split_transition_bzl",
         "//rules:common_bzl",
-        "@rules_java//java/common",
     ],
+    visibility = ["//:__subpackages__"],
 )

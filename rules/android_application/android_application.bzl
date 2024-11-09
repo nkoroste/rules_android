@@ -11,16 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 """android_application rule.
 
 This file exists to inject the correct version of android_binary.
 """
 
-load("//rules:visibility.bzl", "PROJECT_VISIBILITY")
-load("//rules/android_binary:rule.bzl", _android_binary_macro = "android_binary_macro")
 load(":android_application_rule.bzl", _android_application_macro = "android_application_macro")
-
-visibility(PROJECT_VISIBILITY)
+load("//rules:android_binary.bzl", _android_binary = "android_binary")
 
 def android_application(**attrs):
     """Rule to build an Android Application (app bundle).
@@ -48,6 +46,6 @@ def android_application(**attrs):
           **attrs: Rule attributes
     """
     _android_application_macro(
-        _android_binary = _android_binary_macro,
+        _android_binary = _android_binary,
         **attrs
     )
